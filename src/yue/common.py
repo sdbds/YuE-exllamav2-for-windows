@@ -50,6 +50,8 @@ def create_args(
         Path(__file__) / "../../../xcodec_mini_infer/decoders/decoder_151000.pth"
     ).as_posix(),
     rescale: bool = False,
+    stage1_cache_mode: str = "FP16",
+    stage2_cache_mode: str = "FP16",
 ) -> argparse.Namespace:
 
     parser = argparse.ArgumentParser()
@@ -290,6 +292,10 @@ def create_args(
     args.stage1_cache_size = stage1_cache_size
 
     args.stage2_cache_size = stage2_cache_size
+
+    args.stage1_cache_mode = stage1_cache_mode
+
+    args.stage2_cache_mode = stage2_cache_mode
 
     return args, parser
 

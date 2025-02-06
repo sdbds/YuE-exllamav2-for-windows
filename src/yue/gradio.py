@@ -31,6 +31,8 @@ def generate_music(
     cuda_idx,
     seed,
     rescale,
+    stage1_cache_mode,
+    stage2_cache_mode,
 ):
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
@@ -64,6 +66,8 @@ def generate_music(
         rescale=rescale,
         cuda_idx=int(cuda_idx),
         seed=int(seed),
+        stage1_cache_mode=stage1_cache_mode,
+        stage2_cache_mode=stage2_cache_mode,
     )
 
     # Generate music
@@ -209,31 +213,39 @@ with gr.Blocks(
 
             with gr.Group():
                 gr.Markdown("### Model Settings")
-                stage1_model = gr.Dropdown(
-                    label="Stage 1 Model",
-                    choices=[
-                        "m-a-p/YuE-s1-7B-anneal-en-cot",
-                        "m-a-p/YuE-s1-7B-anneal-en-icl",
-                        "m-a-p/YuE-s1-7B-anneal-jp-kr-cot",
-                        "m-a-p/YuE-s1-7B-anneal-jp-kr-icl",
-                        "m-a-p/YuE-s1-7B-anneal-zh-cot",
-                        "m-a-p/YuE-s1-7B-anneal-zh-icl",
-                        "Alissonerdx/YuE-s1-7B-anneal-en-cot-int8",
-                        "Alissonerdx/YuE-s1-7B-anneal-en-icl-int8",
-                        "Alissonerdx/YuE-s1-7B-anneal-zh-cot-int8",
-                        "Alissonerdx/YuE-s1-7B-anneal-zh-icl-int8",
-                        "Alissonerdx/YuE-s1-7B-anneal-jp-kr-cot-int8",
-                        "Alissonerdx/YuE-s1-7B-anneal-jp-kr-icl-int8",
-                    ],
-                    value="m-a-p/YuE-s1-7B-anneal-en-cot",
-                )
-                stage2_model = gr.Dropdown(
-                    label="Stage 2 Model",
-                    choices=[
-                        "m-a-p/YuE-s2-1B-general",
-                    ],
-                    value="m-a-p/YuE-s2-1B-general",
-                )
+                with gr.Row():
+                    stage1_model = gr.Dropdown(
+                        label="Stage 1 Model",
+                        choices=[
+                            "m-a-p/YuE-s1-7B-anneal-en-cot",
+                            "m-a-p/YuE-s1-7B-anneal-en-icl",
+                            "m-a-p/YuE-s1-7B-anneal-jp-kr-cot",
+                            "m-a-p/YuE-s1-7B-anneal-jp-kr-icl",
+                            "m-a-p/YuE-s1-7B-anneal-zh-cot",
+                            "m-a-p/YuE-s1-7B-anneal-zh-icl",
+                        ],
+                        value="m-a-p/YuE-s1-7B-anneal-en-cot",
+                    )
+                    stage1_cache_mode = gr.Radio(
+                        label="stage 1 cache mode",
+                        choices=["FP16", "Q8", "Q6", "Q4"],
+                        value="FP16",
+                        info="Recommended value depends on your GPU memory.",
+                    )
+                with gr.Row():
+                    stage2_model = gr.Dropdown(
+                        label="Stage 2 Model",
+                        choices=[
+                            "m-a-p/YuE-s2-1B-general",
+                        ],
+                        value="m-a-p/YuE-s2-1B-general",
+                    )
+                    stage2_cache_mode = gr.Radio(
+                        label="stage 2 cache mode",
+                        choices=["FP16", "Q8", "Q6", "Q4"],
+                        value="FP16",
+                        info="Recommended value depends on your GPU memory.",
+                    )
         with gr.Column(scale=1):
             with gr.Group():
                 gr.Markdown("### Generation Settings")
@@ -545,6 +557,8 @@ I won't back down""",
             cuda_idx,
             seed,
             rescale,
+            stage1_cache_mode,
+            stage2_cache_mode,
         ],
         outputs=[output_audio],
     )
