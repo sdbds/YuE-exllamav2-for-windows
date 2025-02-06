@@ -24,7 +24,7 @@ elseif (Test-Path "./.venv/bin/activate") {
 
 $Env:HF_HOME = $PSScriptRoot + "\huggingface"
 $Env:TORCH_HOME = $PSScriptRoot + "\torch"
-$Env:HF_ENDPOINT = "https://hf-mirror.com"
+#$Env:HF_ENDPOINT = "https://hf-mirror.com"
 $Env:XFORMERS_FORCE_DISABLE_TRITON = "1"
 $Env:CUDA_HOME = "${env:CUDA_PATH}"
 
