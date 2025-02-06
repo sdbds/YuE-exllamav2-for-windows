@@ -4,7 +4,11 @@ import numpy as np
 import soundfile as sf
 import torch
 import torchaudio
-from common import parser, seed_everything
+import sys
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(current_dir)
+
+from common import create_args, seed_everything
 from models.soundstream_hubert_new import SoundStream
 from omegaconf import OmegaConf
 from post_process_audio import replace_low_freq_with_energy_matched
@@ -87,9 +91,14 @@ def post_process(
         a_file=recons_mix, b_file=vocoder_mix, c_file=os.path.join(output_dir, os.path.basename(recons_mix)), cutoff_freq=5500.0  # 16kHz  # 48kHz
     )
 
+    output_audio = os.path.join(output_dir, os.path.basename(recons_mix))
+    return output_audio
 
-def main():
-    args = parser.parse_args()
+
+def main(args):
+    # enable inference mode globally
+    torch.autograd.grad_mode._enter_inference_mode(True)
+    torch.autograd.set_grad_enabled(False)
     if args.seed is not None:
         seed_everything(args.seed)
 
@@ -101,11 +110,11 @@ def main():
     codec_model.load_state_dict(parameter_dict["codec_model"])
     codec_model.eval()
 
-    post_process(codec_model, device, args.output_dir, args.config_path, args.vocal_decoder_path, args.inst_decoder_path, args.rescale)
+    output_audio = post_process(codec_model, device, args.output_dir, args.config_path, args.vocal_decoder_path, args.inst_decoder_path, args.rescale)
 
+    return output_audio
 
 if __name__ == "__main__":
-    # enable inference mode globally
-    torch.autograd.grad_mode._enter_inference_mode(True)
-    torch.autograd.set_grad_enabled(False)
-    main()
+    _, parser = create_args()
+    args = parser.parse_args()
+    main(args)

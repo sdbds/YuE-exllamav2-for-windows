@@ -3,15 +3,20 @@ import math
 import os
 from collections import Counter
 
+import sys
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(current_dir)
+
 import numpy as np
 import torch
 from codecmanipulator import CodecManipulator
-from common import BlockTokenRangeProcessor, parser, seed_everything, get_cache_class
+from common import BlockTokenRangeProcessor, create_args, seed_everything, get_cache_class
 from exllamav2 import ExLlamaV2, ExLlamaV2Config, ExLlamaV2Tokenizer
 from mmtokenizer import _MMSentencePieceTokenizer
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, LogitsProcessorList
 from transformers.cache_utils import StaticCache
+from huggingface_hub import snapshot_download
 import gc
 
 
@@ -217,7 +222,7 @@ class Stage2Pipeline_EXL2(Stage2Pipeline):
         device_idx = self.device.index
         gpu_split = [0] * torch.cuda.device_count()
         gpu_split[device_idx] = 9999
-        exl2_config = ExLlamaV2Config(model_path)
+        exl2_config = ExLlamaV2Config(snapshot_download(model_path))
         self.model = ExLlamaV2(exl2_config)
         self.model.load(gpu_split)
 
@@ -340,8 +345,10 @@ class Stage2Pipeline_EXL2(Stage2Pipeline):
         return output
 
 
-def main():
-    args = parser.parse_args()
+def main(args):
+    # enable inference mode globally
+    torch.autograd.grad_mode._enter_inference_mode(True)
+    torch.autograd.set_grad_enabled(False)
     if args.seed is not None:
         seed_everything(args.seed)
 
@@ -359,7 +366,6 @@ def main():
 
 
 if __name__ == "__main__":
-    # enable inference mode globally
-    torch.autograd.grad_mode._enter_inference_mode(True)
-    torch.autograd.set_grad_enabled(False)
-    main()
+    _, parser = create_args()
+    args = parser.parse_args()
+    main(args)

@@ -1,7 +1,7 @@
 import os
 import sys
 
-from common import parser
+from common import create_args
 
 
 def check_exit(status: int):
@@ -10,7 +10,7 @@ def check_exit(status: int):
 
 
 if __name__ == "__main__":
-    parser.parse_args()  # make --help work
+    _, parser = create_args()  # make --help work
 
     dirname = os.path.dirname(os.path.abspath(__file__))
     print("Starting stage 1...")

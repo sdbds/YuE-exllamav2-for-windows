@@ -163,3 +163,4 @@ cython_debug/
 
 output
 xcodec_mini_infer
+huggingface

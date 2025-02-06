@@ -2,13 +2,16 @@ import os
 import random
 import re
 from dataclasses import dataclass
+import sys
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(current_dir)
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 import torchaudio
 from codecmanipulator import CodecManipulator
-from common import BlockTokenRangeProcessor, parser, seed_everything, get_cache_class
+from common import BlockTokenRangeProcessor, create_args, seed_everything, get_cache_class
 from einops import rearrange
 from exllamav2 import ExLlamaV2, ExLlamaV2Config, ExLlamaV2Tokenizer
 from exllamav2.generator import ExLlamaV2Sampler
@@ -19,6 +22,7 @@ from torchaudio.transforms import Resample
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, LogitsProcessorList
 from transformers.cache_utils import StaticCache
+from huggingface_hub import snapshot_download
 
 
 @dataclass
@@ -284,7 +288,7 @@ class Stage1Pipeline_EXL2(Stage1Pipeline):
         device_idx = self.device.index
         gpu_split = [0] * torch.cuda.device_count()
         gpu_split[device_idx] = 9999
-        exl2_config = ExLlamaV2Config(model_path)
+        exl2_config = ExLlamaV2Config(snapshot_download(model_path))
         exl2_config.no_sdpa = True  # TODO: Figure out why SDPA slows to a crawl when given custom attn mask
         self.model = ExLlamaV2(exl2_config)
         self.model.load(gpu_split)
@@ -426,23 +430,33 @@ class Stage1Pipeline_EXL2(Stage1Pipeline):
         return raw_output
 
 
-def main():
-    args = parser.parse_args()
+def main(args):
+    # enable inference mode globally
+    torch.autograd.grad_mode._enter_inference_mode(True)
+    torch.autograd.set_grad_enabled(False)
+
     if args.use_audio_prompt and not args.audio_prompt_path:
         raise FileNotFoundError("Please offer audio prompt filepath using '--audio_prompt_path', when you enable 'use_audio_prompt'!")
     if args.use_dual_tracks_prompt and not args.vocal_track_prompt_path and not args.instrumental_track_prompt_path:
         raise FileNotFoundError(
-            "Please offer dual tracks prompt filepath using '--vocal_track_prompt_path' and '--inst_decoder_path', when you enable '--use_dual_tracks_prompt'!"
+            "Please offer dual tracks prompt filepath using '--vocal_track_prompt_path' and '--inst_decoder_prompt_path', when you enable '--use_dual_tracks_prompt'!"
         )
     if args.seed is not None:
         seed_everything(args.seed)
 
     device = torch.device(f"cuda:{args.cuda_idx}" if torch.cuda.is_available() else "cpu")
 
-    with open(args.genre_txt) as f:
-        genres = f.read().strip()
-    with open(args.lyrics_txt) as f:
-        lyrics = f.read().strip()
+    if args.genre_txt.endswith(".txt"):
+        with open(args.genre_txt) as f:
+            genres = f.read().strip()
+    else:
+        genres = args.genre_txt
+
+    if args.lyrics_txt.endswith(".txt"):
+        with open(args.lyrics_txt) as f:
+            lyrics = f.read().strip()
+    else:
+        lyrics = args.lyrics_txt
 
     if args.stage1_use_exl2:
         pipeline = Stage1Pipeline_EXL2(
@@ -483,7 +497,6 @@ def main():
 
 
 if __name__ == "__main__":
-    # enable inference mode globally
-    torch.autograd.grad_mode._enter_inference_mode(True)
-    torch.autograd.set_grad_enabled(False)
-    main()
+    _, parser = create_args()
+    args = parser.parse_args()
+    main(args)
