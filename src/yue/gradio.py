@@ -71,8 +71,11 @@ def generate_music(
     )
 
     # Generate music
+    print("Starting stage 1...")
     stage1_main(args)
+    print("Starting stage 2...")
     stage2_main(args)
+    print("Starting postprocessing...")
     output_audio = postprocess_main(args)
 
     # Return the generated audio files
@@ -270,18 +273,25 @@ with gr.Blocks(
                     stage1_cache_size = gr.Number(
                         label="stage 1 cache size",
                         value=16384,
-                        precision=1024,
                         minimum=1024,
-                        maximum=32768,
+                        maximum=81920,
                         info="Recommended value depends on your GPU memory.",
+                        step=1024,
                     )
                     stage2_cache_size = gr.Number(
                         label="stage 2 cache size",
-                        value=8192,
-                        precision=1024,
+                        value=(
+                            round(
+                                torch.cuda.get_device_properties(0).total_memory
+                                / (1024 * 1024 * 1024)
+                            )
+                            - 1
+                        )
+                        * 1024,
                         minimum=1024,
-                        maximum=32768,
+                        maximum=81920,
                         info="Recommended value depends on your GPU memory.",
+                        step=1024,
                     )
                     cuda_idx = gr.Radio(
                         label="CUDA Index",
