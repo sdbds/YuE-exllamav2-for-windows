@@ -8,6 +8,7 @@ from pathlib import Path
 import torch
 import json
 import random
+import gc
 
 
 def generate_music(
@@ -16,6 +17,7 @@ def generate_music(
     stage1_model,
     stage2_model,
     max_new_tokens,
+    repetition_penalty,
     run_n_segments,
     stage1_cache_size,
     stage2_cache_size,
@@ -51,6 +53,7 @@ def generate_music(
         stage1_model=stage1_model,
         stage2_model=stage2_model,
         max_new_tokens=max_new_tokens,
+        repetition_penalty=repetition_penalty,
         run_n_segments=run_n_segments,
         stage1_cache_size=stage1_cache_size,
         stage2_cache_size=stage2_cache_size,
@@ -77,6 +80,10 @@ def generate_music(
     stage2_main(args)
     print("Starting postprocessing...")
     output_audio = postprocess_main(args)
+
+    # Clean up GPU memory
+    torch.cuda.empty_cache()
+    gc.collect()
 
     # Return the generated audio files
     return output_audio
@@ -261,10 +268,18 @@ with gr.Blocks(
                         step=100,
                         info="The maximum number of tokens to generate.",
                     )
+                    repetition_penalty = gr.Slider(
+                        label="Repetition Penalty",
+                        minimum=0.0,
+                        maximum=10.0,
+                        value=1.1,
+                        step=0.1,
+                        info="The higher the value, the greater the discouragement of repetition. Setting value to 1.0 means no penalty.",
+                    )
                     run_n_segments = gr.Slider(
                         label="Number of Segments",
                         minimum=1,
-                        maximum=5,
+                        maximum=10,
                         value=2,
                         step=1,
                         info="The number of segments to process during the generation.",
@@ -272,7 +287,7 @@ with gr.Blocks(
                 with gr.Row():
                     stage1_cache_size = gr.Number(
                         label="stage 1 cache size",
-                        value=16384,
+                        value=8192,
                         minimum=1024,
                         maximum=81920,
                         info="Recommended value depends on your GPU memory.",
@@ -305,7 +320,7 @@ with gr.Blocks(
                         label="Seed",
                         value=42,
                         minimum=0,
-                        maximum=999999999999,
+                        maximum=2**32 - 1,
                         step=1,
                         interactive=True,
                         info="Random seed for reproducibility.",
@@ -552,6 +567,7 @@ I won't back down""",
             stage1_model,
             stage2_model,
             max_new_tokens,
+            repetition_penalty,
             run_n_segments,
             stage1_cache_size,
             stage2_cache_size,

@@ -19,6 +19,7 @@ def create_args(
     stage1_model: str = "m-a-p/YuE-s1-7B-anneal-en-cot",
     stage2_model="m-a-p/YuE-s2-1B-general",
     max_new_tokens: int = 3000,
+    repetition_penalty: float = 1.1,
     run_n_segments: int = 2,
     stage1_cache_size: int = 16384,
     stage2_cache_size: int = 8192,
@@ -73,6 +74,12 @@ def create_args(
         type=int,
         default=3000,
         help="The maximum number of new tokens to generate in one pass during text generation.",
+    )
+    parser.add_argument(
+        "--repetition_penalty",
+        type=float,
+        default=1.1,
+        help="repetition_penalty ranges from 1.0 to 2.0 (or higher in some cases). It controls the diversity and coherence of the audio tokens generated. The higher the value, the greater the discouragement of repetition. Setting value to 1.0 means no penalty.",
     )
     parser.add_argument(
         "--run_n_segments",
@@ -247,6 +254,8 @@ def create_args(
             stage2_model,
             "--max_new_tokens",
             str(max_new_tokens),
+            "--repetition_penalty",
+            str(repetition_penalty),
             "--run_n_segments",
             str(run_n_segments),
             "--output_dir",

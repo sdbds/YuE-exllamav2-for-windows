@@ -13,6 +13,7 @@ from models.soundstream_hubert_new import SoundStream
 from omegaconf import OmegaConf
 from post_process_audio import replace_low_freq_with_energy_matched
 from vocoder import build_codec_model, process_audio
+import time
 
 
 # convert audio tokens to audio
@@ -86,12 +87,13 @@ def post_process(
         print(e)
         print(f"mix {vocoder_mix} failed! inst: {instrumental_output.shape}, vocal: {vocal_output.shape}")
 
+    output_audio = os.path.join(output_dir, f"{time.strftime('%Y%m%d%H%M%S')}_{os.path.basename(recons_mix)}")
+
     # Post process
     replace_low_freq_with_energy_matched(
-        a_file=recons_mix, b_file=vocoder_mix, c_file=os.path.join(output_dir, os.path.basename(recons_mix)), cutoff_freq=5500.0  # 16kHz  # 48kHz
+        a_file=recons_mix, b_file=vocoder_mix, c_file=output_audio, cutoff_freq=5500.0  # 16kHz  # 48kHz
     )
 
-    output_audio = os.path.join(output_dir, os.path.basename(recons_mix))
     return output_audio
 
 
